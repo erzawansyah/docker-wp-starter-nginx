@@ -1,20 +1,48 @@
-# WordPress Docker Starter Kit (Fully Automated & Reproducible)
+# WordPress Docker Starter Kit (Nginx + PHP-FPM Edition)
 
-A **100% automated** Docker Compose starter kit: simply fill in `.env` and run `docker compose up -d`. The system inside the Docker container will automatically handle database checks, file initialization, and WordPress installation via WP-CLI!
+A **100% automated, high-performance** WordPress Docker Compose starter kit powered by **Nginx (Alpine) + WordPress PHP-FPM (Alpine)**.
+
+Simply configure `.env` and run `docker compose up -d`. The system inside Docker automatically handles database health checks, file initialization, Nginx FastCGI routing, and WordPress installation via WP-CLI!
+
+---
+
+## ⚡ Architecture Overview
+
+```
+[ Browser / Client ]
+         │ (Port ${HTTP_PORT})
+         ▼
+ ┌───────────────┐      FastCGI (port 9000)     ┌───────────────────────┐
+ │  Nginx Web    │ ───────────────────────────> │  WordPress (PHP-FPM)  │
+ │ (nginx:alpine)│                              │(wordpress:fpm-alpine) │
+ └───────────────┘                              └───────────────────────┘
+         │                                                  │
+         │ (Static Assets: CSS, JS, Images)                 │ (MySQL TCP: 3306)
+         ▼                                                  ▼
+ ┌───────────────┐                              ┌───────────────────────┐
+ │ Local Volume  │                              │  Database (MariaDB)   │
+ │ (/wordpress)  │                              │    (mariadb:10.11)    │
+ └───────────────┘                              └───────────────────────┘
+```
+
+* **Nginx (`nginx:alpine`)**: Menangani static assets (gambar, CSS, JS) secara langsung dan super cepat dengan browser caching, gzip compression, dan security rules.
+* **WordPress (`wordpress:fpm-alpine`)**: Menjalankan eksekusi PHP murni via FastCGI tanpa overhead Apache, sangat hemat memory (RAM) & CPU.
+* **MariaDB (`mariadb:10.11`)**: Database relasional cepat dan andal.
+* **Auto-Installer (`wordpress:cli`)**: Melakukan instalasi otomatis WordPress begitu environment siap.
 
 ---
 
 ## 🚀 How to Use
 
 ### 1. Copy the Template Folder
-Copy the `wp-starter` folder to your new project directory:
+Copy folder `wp-starter-nginx` ke project baru Anda:
 ```bash
-cp -r wp-starter my-new-project
+cp -r wp-starter-nginx my-new-project
 cd my-new-project
 ```
 
 ### 2. Configure `.env`
-Copy `.env.example` to `.env` (if it doesn't exist yet), then adjust the variables:
+Copy `.env.example` ke `.env` (jika belum ada), lalu sesuaikan nilainya:
 ```dotenv
 COMPOSE_PROJECT_NAME=my-new-project
 HTTP_PORT=8080
@@ -27,25 +55,25 @@ WP_ADMIN_EMAIL=admin@example.com
 ```
 
 ### 3. Run Docker Compose
-Just type this single command in the terminal:
+Jalankan satu perintah ini di terminal:
 ```bash
 docker compose up -d
 ```
 
-🎉 **Done!**
-The `wp-auto-install` container inside Docker will automatically:
-1. Wait for the MariaDB database to be healthy.
-2. Wait for the WordPress core files and `wp-config.php` to be created.
-3. Run `wp core install` automatically.
-4. Stop gracefully after completion without burdening RAM/CPU resources.
+🎉 **Selesai!**
+Container `wp-auto-install` di dalam Docker akan secara otomatis:
+1. Menunggu database MariaDB berstatus *healthy*.
+2. Menunggu core files WordPress dan `wp-config.php` terbuat.
+3. Menjalankan `wp core install` otomatis.
+4. Berhenti dengan aman (*graceful exit*) tanpa membebani RAM/CPU.
 
 ---
 
 ## 🌐 Accessing the Services
 
-- **WordPress Site**: `http://localhost:<HTTP_PORT>` (example: `http://localhost:8080`)
+- **WordPress Site**: `http://localhost:<HTTP_PORT>` (contoh: `http://localhost:8080`)
 - **WordPress Admin**: `http://localhost:<HTTP_PORT>/wp-admin`
-- **phpMyAdmin**: `http://localhost:<PMA_PORT>` (example: `http://localhost:8081`)
+- **phpMyAdmin**: `http://localhost:<PMA_PORT>` (contoh: `http://localhost:8081`)
 
 ---
 
@@ -54,7 +82,7 @@ The `wp-auto-install` container inside Docker will automatically:
 - **Check container status**: `docker compose ps`
 - **View auto-installation logs**: `docker logs <COMPOSE_PROJECT_NAME>-auto-install`
 - **Stop containers**: `docker compose stop`
-- **Remove containers (database data & web files remain safe)**: `docker compose down`
+- **Remove containers (data database & file web tetap aman)**: `docker compose down`
 - **Run manual WP-CLI commands**:
   ```bash
   docker compose run --rm --entrypoint wp wp-auto-install plugin list
@@ -64,11 +92,11 @@ The `wp-auto-install` container inside Docker will automatically:
   ```bash
   ./scripts/wp-backup.sh
   ```
-- **Reset Environment (Delete local database & WordPress files)**:
+- **Reset Environment (Hapus database lokal & file WordPress)**:
   ```bash
   # Standard reset (wordpress/ & db_data/)
   ./scripts/wp-reset.sh
 
-  # Full reset (including backups/ & .env)
+  # Full reset (termasuk backups/ & .env)
   ./scripts/wp-reset.sh --all
   ```
