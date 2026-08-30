@@ -9,7 +9,7 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - ./db_data:/var/lib/mysql
+      - db_data:/var/lib/mysql
     healthcheck:
       test:
         [
@@ -103,6 +103,9 @@ services:
       - /usr/local/bin/wp-auto-install.sh
     networks:
       - wp-net
+
+volumes:
+  db_data:
 
 networks:
   wp-net:
